@@ -13,105 +13,89 @@ namespace PasswordValidator
     {
         static void Main(string[] args)
         {
-            string password = GetPasswordFromUser();
-            PasswordStrength strength = ValidatePassword(password);
+            Console.Write("Enter a password: ");
+            string password = Console.ReadLine();
 
-                Console.ResetColor();
-                Console.Clear();
-            if (strength == PasswordStrength.Strong)
-            {
+            // Call the method to check password strength
+            PasswordStrengthResult result = CheckPasswordStrength(password);
+
+            // Display the appropriate message based on the result
+            if (result == PasswordStrengthResult.Strong)
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Password is OK");
-                Console.ReadLine();
-            }
-            else if (strength == PasswordStrength.Weak)
-            {
+            else if (result == PasswordStrengthResult.Weak)
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Password is OK but weak");
-                Console.ReadLine();
-            }
             else
-            {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Password is not strong enough");
-                Console.ReadLine();
-            }
-        }
 
-        static string GetPasswordFromUser()
-        {
-            Console.Clear();
+            Console.WriteLine(GetResultMessage(result));
             Console.ResetColor();
-            Console.Write("Enter your password: ");
-            return Console.ReadLine();
+            Console.ReadLine();
         }
 
-        static PasswordStrength ValidatePassword(string password)
+        // Enum to define the possible password strength results
+        enum PasswordStrengthResult
+        {
+            Strong,
+            Weak,
+            Invalid
+        }
+
+        // Method to check password strength
+        static PasswordStrengthResult CheckPasswordStrength(string password)
         {
             if (password.Length < 12 || password.Length > 64)
-                return PasswordStrength.Invalid;
+                return PasswordStrengthResult.Invalid;
 
             bool hasUpperCase = false;
             bool hasLowerCase = false;
             bool hasDigit = false;
             bool hasSpecialChar = false;
+            char prevChar = '\0';
+            int consecutiveCount = 1;
 
-            for (int i = 0; i < password.Length; i++)
+            foreach (char c in password)
             {
-                char c = password[i];
+                if (char.IsUpper(c)) hasUpperCase = true;
+                if (char.IsLower(c)) hasLowerCase = true;
+                if (char.IsDigit(c)) hasDigit = true;
+                if (char.IsSymbol(c) || char.IsPunctuation(c)) hasSpecialChar = true;
 
-                if (char.IsUpper(c))
-                    hasUpperCase = true;
-                else if (char.IsLower(c))
-                    hasLowerCase = true;
-                else if (char.IsDigit(c))
-                    hasDigit = true;
-                else if (IsSpecialCharacter(c))
-                    hasSpecialChar = true;
-
-                if (i >= 3)
+                // Check for consecutive characters
+                if (c == prevChar)
                 {
-                    if (CheckConsecutiveDigits(password, i, 4) || CheckConsecutiveDigits(password, i, 6))
-                        return PasswordStrength.Invalid;
-
-                    if (i >= 4 && password[i] == password[i - 1] && password[i] == password[i - 2] && password[i] == password[i - 3])
-                        return PasswordStrength.Invalid;
+                    consecutiveCount++;
+                    if (consecutiveCount >= 4)
+                        return PasswordStrengthResult.Weak;
                 }
-            }
-
-            if (hasUpperCase && hasLowerCase && hasDigit && hasSpecialChar)
-            {
-                if (password.Length >= 16)
-                    return PasswordStrength.Strong;
                 else
-                    return PasswordStrength.Weak;
+                {
+                    consecutiveCount = 1;
+                }
+
+                prevChar = c;
             }
 
-            return PasswordStrength.Invalid;
+            // Check for the specific number sequences
+            if (password.Contains("1234") || password.Contains("3456"))
+                return PasswordStrengthResult.Weak;
+
+            // Determine the final result based on the conditions
+            if (hasUpperCase && hasLowerCase && hasDigit && hasSpecialChar)
+                return PasswordStrengthResult.Strong;
+            else
+                return PasswordStrengthResult.Weak;
         }
 
-        static bool IsSpecialCharacter(char c)
+        // Method to get the appropriate result message
+        static string GetResultMessage(PasswordStrengthResult result)
         {
-            return !char.IsLetterOrDigit(c);
+            if (result == PasswordStrengthResult.Strong)
+                return "Password is OK";
+            else if (result == PasswordStrengthResult.Weak)
+                return "Password is OK but considered weak";
+            else
+                return "Password is not strong enough";
         }
-
-        static bool CheckConsecutiveDigits(string input, int startIndex, int count)
-        {
-            for (int i = startIndex; i < startIndex + count - 1; i++)
-            {
-                if (!char.IsDigit(input[i]) || input[i] != input[i + 1] - 1)
-                    return false;
-            }
-
-            return true;
-        }
-    }
-
-    enum PasswordStrength
-    {
-        Invalid,
-        Weak,
-        Strong
     }
 }
 
